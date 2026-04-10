@@ -1,0 +1,22 @@
+[project]
+name = "health-api"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "vytallink-health-kit @ file:///home/xmartlabs/Documentos/hackaton-demo/vytallink-health-kit",
+]
+
+[project.scripts]
+health-api = "health_api.main:run"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/health_api"]
