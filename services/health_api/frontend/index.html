@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClinicalCopilot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --sidebar:       #09090F;
+      --main-bg:       #F3F1EC;
+      --card:          #FFFFFF;
+      --panel-bg:      #E9E7E2;
+      --panel-hover:   #DEDAD4;
+      --text-1:        #0D0D12;
+      --text-2:        #505048;
+      --text-3:        #8A8A82;
+      --sidebar-text:  #C4C1B8;
+      --sidebar-dim:   #464640;
+      --border:        rgba(0,0,0,0.07);
+      --border-md:     rgba(0,0,0,0.12);
+
+      --high-fg:  #B91C1C; --high-bg:  #FEF2F2; --high-br:  #FECACA;
+      --mod-fg:   #92400E; --mod-bg:   #FFFBEB; --mod-br:   #FDE68A;
+      --ok-fg:    #065F46; --ok-bg:    #ECFDF5; --ok-br:    #6EE7B7;
+
+      --sidebar-w: 196px;
+      --panel-w:   288px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'IBM Plex Sans', sans-serif;
+      background: var(--main-bg);
+      color: var(--text-1);
+      height: 100vh;
+      overflow: hidden;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Shell ── */
+    .shell {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr var(--panel-w);
+      height: 100vh;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      background: var(--sidebar);
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid rgba(255,255,255,0.035);
+    }
+
+    .brand {
+      padding: 22px 18px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.045);
+    }
+    .brand-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 16px;
+      color: #EDEAD3;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+    }
+    .brand-tag {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 8.5px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--sidebar-dim);
+      margin-top: 3px;
+    }
+
+    nav { padding: 12px 0; flex: 1; }
+
+    .nav-label {
+      padding: 8px 16px 4px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--sidebar-dim);
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 16px;
+      margin: 1px 8px;
+      border-radius: 5px;
+      font-size: 12.5px;
+      color: var(--sidebar-dim);
+      cursor: pointer;
+      transition: all 0.12s;
+      border-left: 2px solid transparent;
+    }
+    .nav-item svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .nav-item:hover { color: var(--sidebar-text); background: rgba(255,255,255,0.04); }
+    .nav-item.active {
+      color: #F0EDE4;
+      background: rgba(255,255,255,0.065);
+      border-left-color: #C41E3A;
+    }
+
+    .sidebar-foot {
+      padding: 14px 18px;
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+    #mode-pill {
+      display: inline-block;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 8.5px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.05);
+      color: var(--sidebar-dim);
+    }
+
+    /* ── Main ── */
+    .main {
+      overflow-y: auto;
+      padding: 28px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .section-eyebrow {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9.5px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-3);
+    }
+
+    /* ── Patient header ── */
+    .patient-header {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 22px;
+    }
+    .ph-row { display: flex; align-items: flex-start; gap: 14px; }
+
+    .avatar {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #2D3748, #1A202C);
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 16px; color: #A0AEC0;
+    }
+
+    .ph-info { flex: 1; }
+    .ph-name {
+      font-size: 19px; font-weight: 600;
+      letter-spacing: -0.025em;
+      color: var(--text-1);
+      line-height: 1.2;
+    }
+    .ph-attrs {
+      display: flex; align-items: center; gap: 8px;
+      margin-top: 5px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-3);
+    }
+    .ph-attrs .sep {
+      width: 3px; height: 3px; border-radius: 50%;
+      background: var(--border-md);
+    }
+
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 2px 8px; border-radius: 4px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9.5px; font-weight: 500;
+      letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .status-badge .dot {
+      width: 5px; height: 5px; border-radius: 50%;
+    }
+    .badge-high { background: var(--high-bg); color: var(--high-fg); border: 1px solid var(--high-br); }
+    .badge-high .dot { background: var(--high-fg); animation: blink 1.4s ease-in-out infinite; }
+    .badge-mod  { background: var(--mod-bg);  color: var(--mod-fg);  border: 1px solid var(--mod-br); }
+    .badge-mod .dot  { background: var(--mod-fg); }
+    .badge-ok   { background: var(--ok-bg);   color: var(--ok-fg);   border: 1px solid var(--ok-br); }
+    .badge-ok .dot   { background: var(--ok-fg); }
+
+    @keyframes blink {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.45; transform: scale(0.8); }
+    }
+
+    .ph-sync {
+      margin-top: 8px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px; color: var(--text-3);
+    }
+
+    /* ── Metrics ── */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .metric-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+    }
+    .metric-lbl {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9.5px; letter-spacing: 0.11em;
+      text-transform: uppercase; color: var(--text-3);
+      margin-bottom: 8px;
+    }
+    .metric-val {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 26px; font-weight: 500;
+      letter-spacing: -0.035em; color: var(--text-1);
+      line-height: 1;
+    }
+    .metric-val .unit { font-size: 12px; font-weight: 400; color: var(--text-3); margin-left: 2px; }
+    .metric-sub {
+      margin-top: 6px; font-size: 10.5px;
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--text-3);
+    }
+    .metric-sub.warn { color: var(--high-fg); }
+    .metric-sub.good { color: var(--ok-fg); }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 22px;
+    }
+    .card-hd {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 12px;
+    }
+    .card-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9.5px; letter-spacing: 0.11em;
+      text-transform: uppercase; color: var(--text-2);
+    }
+    .card-pill {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 8.5px; letter-spacing: 0.08em;
+      padding: 2px 7px; border-radius: 3px;
+      background: #F3F4F6; color: var(--text-3);
+      border: 1px solid var(--border);
+    }
+    .card-pill.count-high { background: var(--high-bg); color: var(--high-fg); border-color: var(--high-br); }
+    .card-pill.count-ok   { background: var(--ok-bg);   color: var(--ok-fg);   border-color: var(--ok-br); }
+
+    /* ── Insight ── */
+    .insight-body {
+      font-size: 12.5px; line-height: 1.7;
+      color: var(--text-2); font-weight: 300;
+    }
+    .insight-body p { margin-bottom: 4px; }
+    .insight-body p:last-child { margin-bottom: 0; }
+
+    /* ── Alerts ── */
+    .alert-list { display: flex; flex-direction: column; gap: 7px; }
+    .alert-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 11px; border-radius: 6px;
+      background: #FAFAF9; border: 1px solid var(--border);
+    }
+    .sev-tag {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 8px; font-weight: 500;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      padding: 2px 6px; border-radius: 3px;
+      flex-shrink: 0; min-width: 34px; text-align: center;
+    }
+    .sev-H { background: var(--high-bg); color: var(--high-fg); }
+    .sev-M { background: var(--mod-bg);  color: var(--mod-fg); }
+    .sev-L { background: #EFF6FF; color: #1D4ED8; }
+    .alert-text { flex: 1; font-size: 12px; color: var(--text-2); }
+    .empty { text-align: center; padding: 16px 0; font-size: 11px; color: var(--text-3); font-family: 'IBM Plex Mono', monospace; }
+
+    /* ── Right panel ── */
+    .panel {
+      background: var(--panel-bg);
+      border-left: 1px solid var(--border-md);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .panel-hd {
+      padding: 22px 18px 14px;
+      border-bottom: 1px solid var(--border-md);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .panel-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9.5px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--text-3);
+    }
+    .panel-count {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px; color: var(--text-3);
+    }
+
+    .patient-list { overflow-y: auto; flex: 1; }
+
+    .p-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 13px 18px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.1s;
+      border-left: 2px solid transparent;
+    }
+    .p-item:hover { background: var(--panel-hover); }
+    .p-item.active {
+      background: var(--card);
+      border-left-color: #C41E3A;
+    }
+    .p-item.active.s-follow_up { border-left-color: var(--mod-fg); }
+    .p-item.active.s-monitor   { border-left-color: var(--ok-fg); }
+
+    .p-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: linear-gradient(145deg, #2D3748, #1A202C);
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 13px; color: #A0AEC0;
+    }
+    .p-info { flex: 1; min-width: 0; }
+    .p-name { font-size: 12.5px; font-weight: 500; color: var(--text-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .p-id   { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-3); margin-top: 1px; }
+
+    .p-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 8.5px; letter-spacing: 0.06em;
+      padding: 2px 6px; border-radius: 3px; flex-shrink: 0;
+    }
+    .p-badge.b-high { background: var(--high-bg); color: var(--high-fg); }
+    .p-badge.b-mod  { background: var(--mod-bg);  color: var(--mod-fg); }
+    .p-badge.b-ok   { background: var(--ok-bg);   color: var(--ok-fg); }
+
+    /* ── States ── */
+    .spinner-wrap {
+      display: flex; align-items: center; justify-content: center;
+      height: 120px; gap: 10px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px; color: var(--text-3);
+    }
+    .spinner {
+      width: 16px; height: 16px;
+      border: 1.5px solid var(--border-md);
+      border-top-color: var(--text-3);
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .api-error {
+      margin: 12px;
+      background: var(--high-bg);
+      border: 1px solid var(--high-br);
+      border-radius: 6px;
+      padding: 12px 14px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px; color: var(--high-fg);
+      line-height: 1.6;
+    }
+
+    /* ── Fade ── */
+    .fade { animation: fadeUp 0.2s ease-out; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(5px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-name">ClinicalCopilot</div>
+      <div class="brand-tag">Care Team Dashboard</div>
+    </div>
+    <nav>
+      <div class="nav-label">Navigation</div>
+      <div class="nav-item active">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 8a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zm-5 7a5 5 0 0 1 10 0H3z"/></svg>
+        Patients
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h11A1.5 1.5 0 0 1 15 2.5v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 13.5v-11zm4 3v6h1.5V5.5H5zm3.5 0v6H10V5.5H8.5zm3.5 3v3H13.5V8.5H12z"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a5 5 0 1 0 0 10A5 5 0 0 0 8 1zM7.5 4h1v4h-1V4zm0 5h1v1.5h-1V9z"/></svg>
+        Alerts
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 2h14v1.5H1V2zm0 4h9v1.5H1V6zm0 4h14v1.5H1V10zm0 4h9v1.5H1V14z"/></svg>
+        Settings
+      </div>
+    </nav>
+    <div class="sidebar-foot">
+      <span id="mode-pill">connecting…</span>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="main">
+    <div class="section-eyebrow">Patient Detail</div>
+    <div id="main-content">
+      <div class="spinner-wrap"><div class="spinner"></div> Loading…</div>
+    </div>
+  </main>
+
+  <!-- ── Right panel ── -->
+  <aside class="panel">
+    <div class="panel-hd">
+      <span class="panel-title">Patients</span>
+      <span class="panel-count" id="panel-count">—</span>
+    </div>
+    <div class="patient-list" id="patient-list">
+      <div class="spinner-wrap"><div class="spinner"></div></div>
+    </div>
+  </aside>
+
+</div>
+
+<script>
+  // ── Helpers ──────────────────────────────────────────────────
+  const statusLabel = s => ({ review_soon: 'High Risk', follow_up: 'Moderate', monitor: 'Stable' }[s] ?? s);
+
+  function badgeClass(s) {
+    return { review_soon: 'badge-high', follow_up: 'badge-mod', monitor: 'badge-ok' }[s] ?? '';
+  }
+  function pBadgeClass(s) {
+    return { review_soon: 'b-high', follow_up: 'b-mod', monitor: 'b-ok' }[s] ?? '';
+  }
+  function pItemClass(s) {
+    return `s-${s}`;
+  }
+
+  function initials(name) {
+    return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  }
+
+  function signalSev(sig) {
+    const s = sig.toLowerCase();
+    if (s.includes('trending up') || (s.includes('low') && s.includes('sleep'))) return 'H';
+    if (s.includes('elevated') || s.includes('missing') || s.includes('slightly')) return 'M';
+    return 'L';
+  }
+
+  function fmt(val, unit, decimals = 1) {
+    if (val == null) return { v: '—', u: '' };
+    const n = decimals === 0 ? Math.round(val).toLocaleString() : val.toFixed(decimals);
+    return { v: n, u: unit };
+  }
+
+  function timeAgo(iso) {
+    const diff = Date.now() - new Date(iso).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h/24)}d ago`;
+  }
+
+  // ── Render detail ─────────────────────────────────────────────
+  function renderDetail(d) {
+    const sleep = fmt(d.metrics.sleepHoursAvg, 'hrs');
+    const hr    = fmt(d.metrics.restingHrAvg, 'bpm');
+    const steps = d.metrics.stepsAvg != null
+      ? { v: Math.round(d.metrics.stepsAvg).toLocaleString(), u: 'steps' }
+      : { v: '—', u: '' };
+
+    const sleepSub = () => {
+      if (sleep.v === '—') return '<span>No data</span>';
+      const h = parseFloat(sleep.v);
+      if (h >= 7)   return '<span class="good">↑ Within range</span>';
+      if (h >= 6)   return '<span class="warn">→ Below target</span>';
+      return '<span class="warn">↓ Well below target</span>';
+    };
+
+    // Only show actionable signals (skip purely positive ones)
+    const actionable = d.signals.filter(s => signalSev(s) !== 'L' || s.toLowerCase().includes('missing'));
+    const allAlerts  = [...actionable, ...d.warnings];
+
+    const alertsHtml = allAlerts.length
+      ? allAlerts.map(s => `
+          <div class="alert-row">
+            <span class="sev-tag sev-${signalSev(s)}">${signalSev(s) === 'H' ? 'HIGH' : signalSev(s) === 'M' ? 'MED' : 'LOW'}</span>
+            <span class="alert-text">${s}</span>
+          </div>`).join('')
+      : '<div class="empty">No active alerts</div>';
+
+    const alertPill = allAlerts.length > 0
+      ? `<span class="card-pill count-high">${allAlerts.length} active</span>`
+      : `<span class="card-pill count-ok">Clear</span>`;
+
+    const insightHtml = d.insight.split('\n').filter(Boolean).map(p => `<p>${p}</p>`).join('');
+
+    return `<div class="fade" style="display:flex;flex-direction:column;gap:16px">
+      <div class="patient-header">
+        <div class="ph-row">
+          <div class="avatar">${initials(d.patientName)}</div>
+          <div class="ph-info">
+            <div class="ph-name">${d.patientName}</div>
+            <div class="ph-attrs">
+              <span>${d.patientId.toUpperCase()}</span>
+              <span class="sep"></span>
+              <span class="status-badge ${badgeClass(d.status)}">
+                <span class="dot"></span>${statusLabel(d.status)}
+              </span>
+            </div>
+            <div class="ph-sync">Updated ${timeAgo(d.updatedAt)}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="metrics-row">
+        <div class="metric-card">
+          <div class="metric-lbl">Avg Sleep</div>
+          <div class="metric-val">${sleep.v}<span class="unit">${sleep.u}</span></div>
+          <div class="metric-sub">${sleepSub()}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-lbl">Resting HR</div>
+          <div class="metric-val">${hr.v}<span class="unit">${hr.u}</span></div>
+          <div class="metric-sub">7-day average</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-lbl">Daily Steps</div>
+          <div class="metric-val">${steps.v}<span class="unit">${steps.u}</span></div>
+          <div class="metric-sub">7-day average</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd">
+          <span class="card-title">Clinical Insight</span>
+          <span class="card-pill">Deterministic</span>
+        </div>
+        <div class="insight-body">${insightHtml}</div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd">
+          <span class="card-title">Risk Alerts</span>
+          ${alertPill}
+        </div>
+        <div class="alert-list">${alertsHtml}</div>
+      </div>
+    </div>`;
+  }
+
+  // ── Render list ───────────────────────────────────────────────
+  function renderList(patients) {
+    document.getElementById('panel-count').textContent = `${patients.length} patient${patients.length !== 1 ? 's' : ''}`;
+    document.getElementById('patient-list').innerHTML = patients.map(p => `
+      <div class="p-item ${pItemClass(p.status)}" data-id="${p.patientId}" onclick="pick('${p.patientId}')">
+        <div class="p-avatar">${initials(p.patientName)}</div>
+        <div class="p-info">
+          <div class="p-name">${p.patientName}</div>
+          <div class="p-id">${p.patientId}</div>
+        </div>
+        <span class="p-badge ${pBadgeClass(p.status)}">${statusLabel(p.status)}</span>
+      </div>`).join('');
+  }
+
+  // ── Select patient ────────────────────────────────────────────
+  async function pick(id) {
+    document.querySelectorAll('.p-item').forEach(el =>
+      el.classList.toggle('active', el.dataset.id === id));
+
+    document.getElementById('main-content').innerHTML =
+      '<div class="spinner-wrap"><div class="spinner"></div> Loading patient…</div>';
+
+    try {
+      const r = await fetch(`/api/patients/${id}/summary`);
+      if (!r.ok) throw new Error(`${r.status}`);
+      document.getElementById('main-content').innerHTML = renderDetail(await r.json());
+    } catch(e) {
+      document.getElementById('main-content').innerHTML =
+        `<div class="api-error">Failed to load patient ${id}<br>${e.message}</div>`;
+    }
+  }
+
+  // ── Init ──────────────────────────────────────────────────────
+  async function init() {
+    try {
+      const h = await fetch('/health');
+      const hd = await h.json();
+      document.getElementById('mode-pill').textContent = hd.stub_mode ? 'stub mode' : 'live mode';
+    } catch {
+      document.getElementById('mode-pill').textContent = 'offline';
+    }
+
+    try {
+      const r = await fetch('/api/patients');
+      if (!r.ok) throw new Error(`${r.status}`);
+      const patients = await r.json();
+      renderList(patients);
+      if (patients.length) pick(patients[0].patientId);
+    } catch(e) {
+      document.getElementById('patient-list').innerHTML =
+        `<div class="api-error">API offline — start the server<br><code style="font-size:9px">USE_STUB=true uv run uvicorn health_api.main:app --reload --port 8008</code></div>`;
+      document.getElementById('main-content').innerHTML =
+        `<div class="spinner-wrap" style="flex-direction:column;gap:6px"><div class="api-error">Backend not reachable on port 8008</div></div>`;
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
