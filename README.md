@@ -1,6 +1,8 @@
 # Clinical Risk Copilot
 
 Hackathon MVP that turns wearable data into simple patient monitoring signals.
+<img width="1909" height="804" alt="image" src="https://github.com/user-attachments/assets/042dfe6c-94d3-4e73-8142-e3cfa88a5637" />
+
 
 ## Scope
 - Patient list
